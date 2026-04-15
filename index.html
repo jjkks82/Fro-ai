@@ -1,48 +1,98 @@
-import os
-from flask import Flask, request, jsonify, render_template
-import google.generativeai as genai
-
-# الإعدادات
-GEMINI_API_KEY = "AIzaSyDI9Y9dzYJ4GHX280pPlNMbBfWSngiwDAE"
-PORT = int(os.environ.get("PORT", 5000))
-
-# تهيئة Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-
-# حل مشكلة الـ 404: نستخدم الموديل flash بشكل مباشر
-model = genai.GenerativeModel('models/gemini-1.5-flash')
-
-app = Flask(__name__, template_folder='.')
-
-SYSTEM_PROMPT = "أنت مساعد ذكي جداً اسمك VSO. تجيب بوضوح وذكاء ومنطق عالي وباللغة العربية."
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-@app.route("/api/chat", methods=["POST"])
-def chat():
-    try:
-        data = request.get_json()
-        message = data.get("message", "").strip()
-
-        if not message:
-            return jsonify({"error": "الرسالة فارغة"}), 400
-
-        # إرسال الطلب مع تحديد البرومبت
-        full_query = f"{SYSTEM_PROMPT}\n\nالمستخدم: {message}"
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VSO AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #ffffff; --ai-bg: #f7f7f8; --border: #e5e7eb; --text: #374151; --accent: #10a37f; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
         
-        # استخدام توليد المحتوى
-        response = model.generate_content(full_query)
+        .header { padding: 15px; text-align: center; border-bottom: 1px solid var(--border); font-weight: bold; font-size: 1.2rem; background: #fff; position: sticky; top: 0; z-index: 10; }
+        .header span { color: var(--accent); }
 
-        if response.text:
-            return jsonify({"reply": response.text})
-        else:
-            return jsonify({"reply": "اعتذر، لم أتمكن من صياغة رد حالياً."})
+        .chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        .message { padding: 20px 15%; display: flex; gap: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); }
+        .message.ai { background: var(--ai-bg); }
+        
+        @media (max-width: 768px) { .message { padding: 15px 5%; } }
+        
+        .avatar { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+        .user .avatar { background: #5436da; color: white; }
+        .ai .avatar { background: var(--accent); color: white; }
+        
+        .content { line-height: 1.6; font-size: 15px; width: 100%; word-break: break-word; }
 
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"error": f"حدث خطأ في الموديل: {str(e)}"}), 500
+        .input-area { padding: 20px 15%; background: #fff; border-top: 1px solid var(--border); }
+        @media (max-width: 768px) { .input-area { padding: 10px 5%; } }
+        
+        .input-container { display: flex; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        textarea { flex: 1; border: none; outline: none; resize: none; padding: 5px; font-family: inherit; font-size: 16px; max-height: 120px; }
+        .send-btn { background: var(--accent); color: white; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .send-btn:hover { opacity: 0.8; }
+        .send-btn:disabled { background: #ccc; }
+    </style>
+</head>
+<body>
+    <div class="header"><span>VSO</span> AI</div>
+    <div class="chat-box" id="chat">
+        <div class="message ai">
+            <div class="avatar">V</div>
+            <div class="content">هلا والله! أنا VSO، كيف أقدر أساعدك اليوم؟</div>
+        </div>
+    </div>
+    <div class="input-area">
+        <div class="input-container">
+            <textarea id="userInput" rows="1" placeholder="اسأل VSO عن أي شيء..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+            <button class="send-btn" id="sendBtn" onclick="send()">✈</button>
+        </div>
+    </div>
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=PORT)
+    <script>
+        async function send() {
+            const input = document.getElementById('userInput');
+            const btn = document.getElementById('sendBtn');
+            const text = input.value.trim();
+            if (!text || btn.disabled) return;
+
+            append('user', text);
+            input.value = ''; 
+            input.style.height = 'auto';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await res.json();
+                if (data.reply) {
+                    append('ai', data.reply);
+                } else {
+                    append('ai', "عذراً، واجهت مشكلة بسيطة في معالجة الرد.");
+                }
+            } catch { 
+                append('ai', "حدث خطأ، تأكد من اتصال السيرفر."); 
+            }
+            btn.disabled = false;
+        }
+
+        function append(role, text) {
+            const chat = document.getElementById('chat');
+            const icon = role === 'user' ? '👤' : 'V';
+            chat.innerHTML += `<div class="message ${role}"><div class="avatar">${icon}</div><div class="content">${text.replace(/\n/g, '<br>')}</div></div>`;
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        document.getElementById('userInput').addEventListener('keypress', e => { 
+            if (e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); 
+                send(); 
+            } 
+        });
+    </script>
+</body>
+</html>
