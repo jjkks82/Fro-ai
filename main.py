@@ -9,24 +9,17 @@ GROQ_API_KEY = "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"
 GROQ_MODEL   = "llama3-70b-8192"
 PORT         = int(os.environ.get("PORT", 5000))
 
-# ======================================================
-#               تهيئة التطبيق
-# ======================================================
-# تم تحديد مجلد القوالب ليكون المجلد الحالي لتجنب أخطاء المسارات في Render
+# تهيئة Flask ليبحث عن index.html في المجلد الحالي
 app = Flask(__name__, template_folder='.')
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-SYSTEM_PROMPT = """أنت مساعد ذكي جداً واسمك "VSO".
-- تجيب على أي سؤال أو طلب يطرحه المستخدم مهما كان نوعه.
-- تتحدث بالعربية بأسلوب راقي وواضح.
-- مساعدتك غير محدودة وذكاؤك خارق في التحليل والكتابة والبرمجة."""
+SYSTEM_PROMPT = """أنت مساعد ذكي جداً اسمك "VSO".
+- تجيب على أي سؤال أو طلب بذكاء خارق ومنطق عالي.
+- أسلوبك عربي فصيح وراقي ومباشر.
+- مسموح لك بكتابة الكود، التحليل، أو أي مهمة يطلبها المستخدم."""
 
-# ======================================================
-#               المسارات
-# ======================================================
 @app.route("/")
 def index():
-    # سيبحث عن index.html في المجلد الرئيسي
     return render_template("index.html")
 
 @app.route("/api/chat", methods=["POST"])
@@ -48,7 +41,6 @@ def chat():
             model=GROQ_MODEL,
             messages=messages,
             temperature=0.7,
-            max_tokens=2048, # زدنا عدد التوكنز عشان يكتب براحته
         )
 
         reply = response.choices[0].message.content.strip()
