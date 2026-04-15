@@ -2,21 +2,16 @@ import os
 from flask import Flask, request, jsonify, render_template
 from groq import Groq
 
-# ======================================================
-#               الإعدادات
-# ======================================================
+# الإعدادات
 GROQ_API_KEY = "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"
 GROQ_MODEL   = "llama3-70b-8192"
 PORT         = int(os.environ.get("PORT", 5000))
 
-# تهيئة Flask ليبحث عن index.html في المجلد الحالي
 app = Flask(__name__, template_folder='.')
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-SYSTEM_PROMPT = """أنت مساعد ذكي جداً اسمك "VSO".
-- تجيب على أي سؤال أو طلب بذكاء خارق ومنطق عالي.
-- أسلوبك عربي فصيح وراقي ومباشر.
-- مسموح لك بكتابة الكود، التحليل، أو أي مهمة يطلبها المستخدم."""
+# شخصية البوت VSO
+SYSTEM_PROMPT = "أنت مساعد ذكي جداً اسمك VSO. تجيب بوضوح وذكاء ومنطق عالي وباللغة العربية."
 
 @app.route("/")
 def index():
@@ -25,9 +20,9 @@ def index():
 @app.route("/api/chat", methods=["POST"])
 def chat():
     try:
-        data     = request.get_json()
-        history  = data.get("history", [])
-        message  = data.get("message", "").strip()
+        data = request.get_json()
+        history = data.get("history", [])
+        message = data.get("message", "").strip()
 
         if not message:
             return jsonify({"error": "الرسالة فارغة"}), 400
@@ -37,6 +32,7 @@ def chat():
             messages.append({"role": msg["role"], "content": msg["content"]})
         messages.append({"role": "user", "content": message})
 
+        # طلب الرد من Groq
         response = groq_client.chat.completions.create(
             model=GROQ_MODEL,
             messages=messages,
