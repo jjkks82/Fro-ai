@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# الإعدادات
+# الإعدادات - مفتاحك
 API_KEY = "AIzaSyDI9Y9dzYJ4GHX280pPlNMbBfWSngiwDAE"
 genai.configure(api_key=API_KEY)
 
@@ -17,21 +17,24 @@ HTML_PAGE = """
     <title>VSO AI</title>
     <style>
         body { font-family: sans-serif; margin: 0; background: #fff; display: flex; flex-direction: column; height: 100vh; }
-        header { padding: 15px; text-align: center; border-bottom: 1px solid #eee; font-weight: bold; }
+        header { padding: 15px; text-align: center; border-bottom: 1px solid #eee; font-weight: bold; font-size: 1.2rem; }
+        header span { color: #6c63ff; }
         #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px 15px; border-radius: 15px; max-width: 80%; line-height: 1.4; }
-        .user { background: #6c63ff; color: #fff; align-self: flex-end; }
-        .bot { background: #f0f0f0; align-self: flex-start; }
-        #form { padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; }
-        input { flex: 1; border: 1px solid #ddd; padding: 10px; border-radius: 20px; outline: none; }
-        button { background: #6c63ff; color: #fff; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; }
+        .msg { padding: 12px 16px; border-radius: 18px; max-width: 80%; line-height: 1.5; font-size: 15px; }
+        .user { background: #6c63ff; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .bot { background: #f0f0f1; color: #1a1a1a; align-self: flex-start; border-bottom-left-radius: 4px; }
+        #form { padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; background: #fff; }
+        input { flex: 1; border: 1px solid #ddd; padding: 12px; border-radius: 25px; outline: none; font-size: 16px; direction: rtl; }
+        button { background: #6c63ff; color: #fff; border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-size: 18px; }
     </style>
 </head>
 <body>
-    <header>VSO AI</header>
-    <div id="chat"></div>
+    <header>VSO <span>AI</span></header>
+    <div id="chat">
+        <div class="msg bot">هلا والله! أنا VSO، كيف أقدر أساعدك اليوم؟</div>
+    </div>
     <div id="form">
-        <input type="text" id="msg" placeholder="اكتب هنا..." autocomplete="off">
+        <input type="text" id="msg" placeholder="اكتب رسالتك هنا..." autocomplete="off">
         <button id="btn">✈</button>
     </div>
     <script>
@@ -52,8 +55,8 @@ HTML_PAGE = """
                     body: JSON.stringify({message: val})
                 });
                 const data = await res.json();
-                append(data.reply || 'خطأ من السيرفر', 'bot');
-            } catch { append('تعذر الاتصال', 'bot'); }
+                append(data.reply || 'حدث خطأ في الرد', 'bot');
+            } catch { append('تعذر الاتصال بالسيرفر', 'bot'); }
             btn.disabled = false;
         }
 
@@ -80,17 +83,19 @@ def index():
 def chat():
     try:
         data = request.get_json()
-        msg = data.get("message", "")
+        user_msg = data.get("message", "").strip()
         
-        # الطريقة المضمونة لطلب Gemini
+        # الحل لخطأ 404: نستخدم الاسم المباشر للموديل بدون "models/" أو تحديد نسخة
         model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(f"أنت VSO، مساعد ذكي. رد باختصار: {msg}")
+        
+        # طلب الرد
+        response = model.generate_content(f"أنت VSO، مساعد ذكي ومفيد. رد بأسلوب رهيب: {user_msg}")
         
         return jsonify({"reply": response.text})
     except Exception as e:
-        print(f"ERROR: {str(e)}")
-        # نرسل الخطأ للمستخدم عشان نعرف وش صار بالضبط
-        return jsonify({"reply": f"عذراً يا مجود، صار خطأ: {str(e)}"}), 200
+        # إذا صار خطأ، بيطلع لك هنا وش المشكلة بالضبط
+        return jsonify({"reply": f"عذراً يا مجود، لسه فيه مشكلة: {str(e)}"}), 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
