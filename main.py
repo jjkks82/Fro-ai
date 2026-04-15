@@ -4,12 +4,39 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-genai.configure(api_key="AIzaSyDI9Y9dzYJ4GHX280pPlNMbBfWSngiwDAE")
+# ======= DEBUG ROUTE =======
+@app.route("/debug")
+def debug():
+    results = {}
+    try:
+        import google.generativeai as g
+        results["import"] = "OK"
+        results["version"] = g.__version__
+    except Exception as e:
+        results["import"] = str(e)
 
-model = genai.GenerativeModel('gemini-1.5-flash')
+    try:
+        genai.configure(api_key="AIzaSyDI9Y9dzYJ4GHX280pPlNMbBfWSngiwDAE")
+        results["configure"] = "OK"
+    except Exception as e:
+        results["configure"] = str(e)
 
-SYSTEM_PROMPT = "أنت VSO، مساعد ذكاء اصطناعي مفيد وودود. اسمك هو VSO وتم تطويرك لمساعدة المستخدمين. أجب دائماً بأسلوب واضح ومنظم."
+    try:
+        m = genai.GenerativeModel('gemini-1.5-flash')
+        results["model_init"] = "OK"
+    except Exception as e:
+        results["model_init"] = str(e)
 
+    try:
+        m = genai.GenerativeModel('gemini-1.5-flash')
+        r = m.generate_content("قل مرحبا")
+        results["test_call"] = r.text
+    except Exception as e:
+        results["test_call"] = str(e)
+
+    return jsonify(results)
+
+# ======= MAIN PAGE =======
 HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -134,14 +161,11 @@ HTML_PAGE = """
     .welcome-msg strong { display: block; font-size: 1.4rem; color: #6c63ff; margin-bottom: 6px; }
     @media (max-width: 600px) {
       .message { max-width: 90%; }
-      header h1 { font-size: 1.1rem; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>VSO <span>AI</span></h1>
-  </header>
+  <header><h1>VSO <span>AI</span></h1></header>
   <div id="chat-container">
     <div class="welcome-msg">
       <strong>مرحباً بك 👋</strong>
@@ -166,7 +190,6 @@ HTML_PAGE = """
       chatContainer.appendChild(div);
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
-
     function showTyping() {
       const div = document.createElement('div');
       div.classList.add('typing-indicator');
@@ -175,12 +198,10 @@ HTML_PAGE = """
       chatContainer.appendChild(div);
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
-
     function hideTyping() {
       const t = document.getElementById('typing');
       if (t) t.remove();
     }
-
     async function sendMessage() {
       const message = userInput.value.trim();
       if (!message) return;
@@ -205,7 +226,6 @@ HTML_PAGE = """
         sendBtn.disabled = false;
       }
     }
-
     sendBtn.addEventListener('click', sendMessage);
     userInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -227,12 +247,22 @@ def index():
 def chat():
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({"error": "لم يتم استلام بيانات"}), 400
+
         user_message = data.get("message", "").strip()
         if not user_message:
             return jsonify({"error": "الرسالة فارغة"}), 400
-        full_prompt = SYSTEM_PROMPT + "\n\nالمستخدم: " + user_message
+
+        genai.configure(api_key="AIzaSyDI9Y9dzYJ4GHX280pPlNMbBfWSngiwDAE")
+        model = genai.GenerativeModel('gemini-1.5-flash')
+
+        system_prompt = "أنت VSO، مساعد ذكاء اصطناعي مفيد وودود. اسمك هو VSO."
+        full_prompt = system_prompt + "\n\nالمستخدم: " + user_message
+
         response = model.generate_content(full_prompt)
         return jsonify({"reply": response.text})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
