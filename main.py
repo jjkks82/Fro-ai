@@ -22,24 +22,20 @@ def index():
 def chat():
     try:
         data = request.get_json()
-        history = data.get("history", [])
         message = data.get("message", "").strip()
 
         if not message:
             return jsonify({"error": "الرسالة فارغة"}), 400
 
-        # تحويل التاريخ لصيغة Gemini
-        chat_session = model.start_chat(history=[])
-        
-        # إرسال الرسالة مع البرومبت (لضمان الشخصية في كل مرة)
+        # إرسال الطلب لـ Gemini
         full_query = f"{SYSTEM_PROMPT}\n\nالمستخدم: {message}"
-        response = chat_session.send_message(full_query)
+        response = model.generate_content(full_query)
 
         return jsonify({"reply": response.text})
 
     except Exception as e:
         print(f"Error: {e}")
-        return jsonify({"error": "حدث خطأ في محرك Gemini، تأكد من صلاحية المفتاح."}), 500
+        return jsonify({"error": "حدث خطأ في الاتصال، حاول مجدداً."}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
