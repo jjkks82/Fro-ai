@@ -1,16 +1,17 @@
 import os
 from flask import Flask, request, jsonify, render_template
-from groq import Groq
+import google.generativeai as genai
 
 # الإعدادات
-GROQ_API_KEY = "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"
-GROQ_MODEL   = "llama3-70b-8192"
-PORT         = int(os.environ.get("PORT", 5000))
+GEMINI_API_KEY = "AIzaSyDI9Y9dzYJ4GHX280pPlNMbBfWSngiwDAE"
+PORT = int(os.environ.get("PORT", 5000))
+
+# تهيئة Gemini
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 app = Flask(__name__, template_folder='.')
-groq_client = Groq(api_key=GROQ_API_KEY)
 
-# شخصية البوت VSO
 SYSTEM_PROMPT = "أنت مساعد ذكي جداً اسمك VSO. تجيب بوضوح وذكاء ومنطق عالي وباللغة العربية."
 
 @app.route("/")
@@ -27,24 +28,18 @@ def chat():
         if not message:
             return jsonify({"error": "الرسالة فارغة"}), 400
 
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-        for msg in history:
-            messages.append({"role": msg["role"], "content": msg["content"]})
-        messages.append({"role": "user", "content": message})
+        # تحويل التاريخ لصيغة Gemini
+        chat_session = model.start_chat(history=[])
+        
+        # إرسال الرسالة مع البرومبت (لضمان الشخصية في كل مرة)
+        full_query = f"{SYSTEM_PROMPT}\n\nالمستخدم: {message}"
+        response = chat_session.send_message(full_query)
 
-        # طلب الرد من Groq
-        response = groq_client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=messages,
-            temperature=0.7,
-        )
-
-        reply = response.choices[0].message.content.strip()
-        return jsonify({"reply": reply})
+        return jsonify({"reply": response.text})
 
     except Exception as e:
         print(f"Error: {e}")
-        return jsonify({"error": "حدث خطأ في الاتصال، حاول مجدداً."}), 500
+        return jsonify({"error": "حدث خطأ في محرك Gemini، تأكد من صلاحية المفتاح."}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
