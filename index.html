@@ -2,89 +2,41 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>VSO — مساعدك الذكي</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #f9fafb;
-    --sidebar-bg: #ffffff;
-    --surface: #ffffff;
-    --border: #e5e7eb;
-    --accent: #2563eb; /* أزرق أنيق */
-    --text: #111827;
-    --text-muted: #6b7280;
-    --user-bubble: #2563eb;
-    --ai-bubble: #f3f4f6;
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Tajawal', sans-serif;
-    margin: 0; display: flex; height: 100vh; overflow: hidden;
-  }
-
-  .sidebar {
-    width: 260px; background: var(--sidebar-bg); border-left: 1px solid var(--border);
-    display: flex; flex-direction: column; padding: 20px;
-  }
-
-  .main { flex: 1; display: flex; flex-direction: column; background: var(--bg); }
-
-  .header { padding: 15px 25px; border-bottom: 1px solid var(--border); background: #fff; font-weight: bold; }
-
+  :root { --bg: #ffffff; --sidebar: #f3f4f6; --accent: #2563eb; --text: #1f2937; --border: #e5e7eb; }
+  body { background: var(--bg); color: var(--text); font-family: 'Tajawal', sans-serif; margin: 0; display: flex; height: 100vh; }
+  .sidebar { width: 260px; background: var(--sidebar); border-left: 1px solid var(--border); padding: 20px; }
+  .main { flex: 1; display: flex; flex-direction: column; }
+  .header { padding: 15px; border-bottom: 1px solid var(--border); font-weight: bold; font-size: 20px; color: var(--accent); }
   .messages { flex: 1; overflow-y: auto; padding: 20px; }
-
-  .msg-row { display: flex; margin-bottom: 20px; gap: 10px; }
-  .msg-row.user { flex-direction: row-reverse; }
-
-  .bubble { max-width: 70%; padding: 12px 16px; border-radius: 15px; line-height: 1.6; }
-  .bubble.ai { background: var(--ai-bubble); color: var(--text); border: 1px solid var(--border); }
-  .bubble.user { background: var(--user-bubble); color: #fff; }
-
-  .input-area { padding: 20px; background: #fff; border-top: 1px solid var(--border); }
-  .input-box { max-width: 800px; margin: 0 auto; display: flex; gap: 10px; }
-
-  textarea {
-    flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 10px;
-    resize: none; font-family: inherit; outline: none;
-  }
-
-  button {
-    background: var(--accent); color: #fff; border: none; padding: 0 20px;
-    border-radius: 10px; cursor: pointer; font-weight: bold;
-  }
+  .bubble { max-width: 80%; padding: 12px; border-radius: 12px; margin-bottom: 15px; line-height: 1.6; }
+  .ai { background: #f9fafb; border: 1px solid var(--border); align-self: flex-start; }
+  .user { background: var(--accent); color: white; align-self: flex-end; margin-right: auto; }
+  .input-area { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+  textarea { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; resize: none; outline: none; }
+  button { background: var(--accent); color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; }
 </style>
 </head>
 <body>
-  <aside class="sidebar">
-    <h2 style="color:var(--accent)">VSO AI</h2>
-    <p style="font-size:12px; color:var(--text-muted)">المستقبل بين يديك</p>
-  </aside>
+  <aside class="sidebar"><h2>VSO AI</h2><p>الذكاء في أبسط صوره</p></aside>
   <main class="main">
-    <div class="header">محادثة جديدة مع VSO</div>
-    <div class="messages" id="chat">
-        <div class="msg-row ai"><div class="bubble ai">مرحباً! أنا VSO، كيف يمكنني مساعدتك اليوم؟</div></div>
-    </div>
+    <div class="header">VSO AI — محادثة ذكية</div>
+    <div class="messages" id="chat"></div>
     <div class="input-area">
-      <div class="input-box">
-        <textarea id="userInput" rows="1" placeholder="اكتب أي شيء هنا..."></textarea>
-        <button onclick="send()">إرسال</button>
-      </div>
+      <textarea id="userInput" rows="1" placeholder="اكتب رسالتك هنا..."></textarea>
+      <button onclick="send()">إرسال</button>
     </div>
   </main>
-
 <script>
   let history = [];
   async function send() {
     const input = document.getElementById('userInput');
     const text = input.value.trim();
     if(!text) return;
-
     append('user', text);
     input.value = '';
-    
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -96,10 +48,9 @@
       history.push({role:'user', content:text}, {role:'assistant', content:data.reply});
     }
   }
-
   function append(role, text) {
     const chat = document.getElementById('chat');
-    chat.innerHTML += `<div class="msg-row ${role}"><div class="bubble ${role}">${text}</div></div>`;
+    chat.innerHTML += `<div class="bubble ${role}">${text}</div>`;
     chat.scrollTop = chat.scrollHeight;
   }
 </script>
