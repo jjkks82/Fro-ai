@@ -1,6 +1,11 @@
-import telebot
+import os
+import sys
 import threading
+import traceback
+import time
+
 from flask import Flask
+import telebot
 from groq import Groq
 
 # ======================================================
@@ -10,23 +15,50 @@ TELEGRAM_TOKEN = "8752399371:AAGHkApXhbCY9Iq9tIAUk8wYxJlploWMGac"
 GROQ_API_KEY   = "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"
 GROQ_MODEL     = "llama3-70b-8192"
 
+# ✅ الإصلاح الأساسي: Render يُحدد المنفذ عبر متغير البيئة PORT
+PORT = int(os.environ.get("PORT", 8080))
+
 # ======================================================
 #               تهيئة العملاء
 # ======================================================
-bot         = telebot.TeleBot(TELEGRAM_TOKEN)
-groq_client = Groq(api_key=GROQ_API_KEY)
-app         = Flask(__name__)
+print("[INIT] جارٍ تهيئة البوت...")
+
+try:
+    bot = telebot.TeleBot(TELEGRAM_TOKEN)
+    print("[INIT] ✅ Telegram Bot OK")
+except Exception as e:
+    print(f"[FATAL] فشل تهيئة Telegram: {e}")
+    traceback.print_exc()
+    sys.exit(1)
+
+try:
+    groq_client = Groq(api_key=GROQ_API_KEY)
+    print("[INIT] ✅ Groq Client OK")
+except Exception as e:
+    print(f"[FATAL] فشل تهيئة Groq: {e}")
+    traceback.print_exc()
+    sys.exit(1)
+
+app = Flask(__name__)
 
 # ======================================================
 #       سيرفر Flask (لإبقاء الخدمة حية على Render)
 # ======================================================
 @app.route("/")
 def home():
-    return "✅ Bot is running!", 200
+    return "✅ Bot is alive!", 200
+
+@app.route("/health")
+def health():
+    return {"status": "ok"}, 200
 
 def run_flask():
-    """تشغيل سيرفر Flask على المنفذ 8080"""
-    app.run(host="0.0.0.0", port=8080)
+    print(f"[FLASK] تشغيل على المنفذ {PORT}...")
+    try:
+        app.run(host="0.0.0.0", port=PORT, use_reloader=False, debug=False)
+    except Exception as e:
+        print(f"[ERROR][FLASK] {e}")
+        traceback.print_exc()
 
 # ======================================================
 #       شخصية البوت (System Prompt)
@@ -57,14 +89,11 @@ def handle_start(message):
             "• والكثير غير ذلك!\n\n"
             "فقط اكتب لي ما تريد، وأنا هنا. 😊"
         )
-        bot.send_message(
-            message.chat.id,
-            welcome_text,
-            parse_mode="Markdown"
-        )
+        bot.send_message(message.chat.id, welcome_text, parse_mode="Markdown")
         print(f"[START] المستخدم {message.from_user.id} بدأ المحادثة.")
     except Exception as e:
         print(f"[ERROR][handle_start] {e}")
+        traceback.print_exc()
 
 # ======================================================
 #               معالج الرسائل النصية
@@ -73,66 +102,60 @@ def handle_start(message):
 def handle_message(message):
     user_id   = message.from_user.id
     user_text = message.text.strip()
+    print(f"[MSG] من {user_id}: {user_text[:80]}")
 
-    print(f"[MSG] من المستخدم {user_id}: {user_text[:80]}")
-
-    # إظهار حالة "يكتب..."
     try:
         bot.send_chat_action(message.chat.id, "typing")
     except Exception as e:
         print(f"[ERROR][chat_action] {e}")
 
-    # استدعاء Groq API
     try:
         response = groq_client.chat.completions.create(
             model=GROQ_MODEL,
             messages=[
-                {"role": "system",  "content": SYSTEM_PROMPT},
-                {"role": "user",    "content": user_text},
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": user_text},
             ],
             temperature=0.7,
             max_tokens=1024,
         )
         ai_reply = response.choices[0].message.content.strip()
-        print(f"[REPLY] للمستخدم {user_id}: {ai_reply[:80]}")
-
+        print(f"[REPLY] لـ{user_id}: {ai_reply[:80]}")
     except Exception as e:
         print(f"[ERROR][groq_api] {e}")
-        ai_reply = (
-            "⚠️ عذراً، حدث خطأ أثناء معالجة طلبك.\n"
-            "يرجى المحاولة مرة أخرى بعد لحظات."
-        )
+        traceback.print_exc()
+        ai_reply = "⚠️ عذراً، حدث خطأ أثناء معالجة طلبك. يرجى المحاولة مرة أخرى."
 
-    # إرسال الرد للمستخدم
     try:
-        bot.send_message(
-            message.chat.id,
-            ai_reply,
-            parse_mode="Markdown"
-        )
+        bot.send_message(message.chat.id, ai_reply, parse_mode="Markdown")
     except Exception as e:
-        # في حال فشل Markdown، أرسل نصاً عادياً
-        print(f"[ERROR][send_message with Markdown] {e} — retrying as plain text.")
+        print(f"[ERROR][send_markdown] {e} — إعادة الإرسال كنص عادي...")
         try:
             bot.send_message(message.chat.id, ai_reply)
         except Exception as e2:
-            print(f"[ERROR][send_message plain] {e2}")
+            print(f"[ERROR][send_plain] {e2}")
+            traceback.print_exc()
 
 # ======================================================
 #               نقطة الدخول الرئيسية
 # ======================================================
 if __name__ == "__main__":
-    print("🚀 جارٍ تشغيل البوت...")
+    print("=" * 50)
+    print("🚀 تشغيل البوت على Render...")
+    print(f"   Python : {sys.version}")
+    print(f"   PORT   : {PORT}")
+    print("=" * 50)
 
-    # تشغيل Flask في خيط مستقل
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
-    print("✅ سيرفر Flask يعمل على المنفذ 8080")
+    print("✅ Flask يعمل في الخلفية.")
+    print("✅ البوت يستقبل الرسائل...")
 
-    # تشغيل البوت بالاستطلاع المستمر
-    print("✅ بوت تيليجرام يعمل ويستقبل الرسائل...")
     while True:
         try:
             bot.polling(none_stop=True, interval=1, timeout=60)
         except Exception as e:
-            print(f"[ERROR][polling] {e} — إعادة الاتصال...")
+            print(f"[ERROR][polling] {e}")
+            traceback.print_exc()
+            print("[POLLING] إعادة الاتصال خلال 5 ثوانٍ...")
+            time.sleep(5)
