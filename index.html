@@ -6,87 +6,56 @@
     <title>VSO AI</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #ffffff; --ai-bg: #f7f7f8; --border: #d1d5db; --text: #374151; --accent: #10a37f; }
+        :root { --bg: #ffffff; --ai-bg: #f7f7f8; --border: #e5e7eb; --text: #374151; --accent: #10a37f; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
-        
-        .header { padding: 15px; text-align: center; border-bottom: 1px solid var(--border); font-weight: bold; font-size: 1.2rem; background: #fff; position: sticky; top: 0; z-index: 10; }
-        .header span { color: var(--accent); }
-
+        .header { padding: 15px; text-align: center; border-bottom: 1px solid var(--border); font-weight: bold; background: #fff; position: sticky; top: 0; }
         .chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        .message { padding: 20px 10%; display: flex; gap: 15px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .message { padding: 20px 15%; display: flex; gap: 15px; border-bottom: 1px solid rgba(0,0,0,0.03); }
         .message.ai { background: var(--ai-bg); }
-        
-        @media (max-width: 600px) { .message { padding: 15px 5%; } }
-        
-        .avatar { width: 30px; height: 30px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+        @media (max-width: 768px) { .message { padding: 15px 5%; } }
+        .avatar { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
         .user .avatar { background: #5436da; color: white; }
         .ai .avatar { background: var(--accent); color: white; }
-        
-        .content { line-height: 1.6; font-size: 15px; width: 100%; }
-
-        .input-area { padding: 20px 10%; background: linear-gradient(transparent, #fff 30%); }
-        @media (max-width: 600px) { .input-area { padding: 10px 5%; } }
-        
-        .input-container { display: flex; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        textarea { flex: 1; border: none; outline: none; resize: none; padding: 5px; font-family: inherit; font-size: 16px; max-height: 150px; }
-        .send-btn { background: var(--accent); color: white; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .send-btn:hover { opacity: 0.8; }
-        .send-btn:disabled { background: #ccc; }
+        .input-area { padding: 20px 15%; background: #fff; }
+        @media (max-width: 768px) { .input-area { padding: 10px 5%; } }
+        .input-container { display: flex; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        textarea { flex: 1; border: none; outline: none; resize: none; padding: 5px; font-family: inherit; font-size: 16px; max-height: 120px; }
+        .send-btn { background: var(--accent); color: white; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div class="header"><span>VSO</span> AI</div>
+    <div class="header">VSO AI</div>
     <div class="chat-box" id="chat">
-        <div class="message ai">
-            <div class="avatar">V</div>
-            <div class="content">هلا والله! أنا VSO، كيف أقدر أساعدك اليوم؟</div>
-        </div>
+        <div class="message ai"><div class="avatar">V</div><div class="content">مرحباً! أنا VSO مدعوم بـ Gemini، كيف أساعدك؟</div></div>
     </div>
     <div class="input-area">
         <div class="input-container">
-            <textarea id="userInput" rows="1" placeholder="اسأل VSO عن أي شيء..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
-            <button class="send-btn" id="sendBtn" onclick="send()">✈</button>
+            <textarea id="userInput" rows="1" placeholder="اكتب سؤالك هنا..."></textarea>
+            <button class="send-btn" onclick="send()">✈</button>
         </div>
     </div>
-
     <script>
-        let history = [];
         async function send() {
             const input = document.getElementById('userInput');
-            const btn = document.getElementById('sendBtn');
             const text = input.value.trim();
-            if (!text || btn.disabled) return;
-
+            if(!text) return;
             append('user', text);
-            input.value = ''; input.style.height = 'auto';
-            btn.disabled = true;
-
-            try {
-                const res = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text, history: history.slice(-10) })
-                });
-                const data = await res.json();
-                if (data.reply) {
-                    append('ai', data.reply);
-                    history.push({ role: 'user', content: text }, { role: 'assistant', content: data.reply });
-                } else {
-                    append('ai', "عذراً، واجهت مشكلة بسيطة. حاول مرة ثانية.");
-                }
-            } catch { append('ai', "ما قدرت أتصل بالسيرفر، تأكد إن رندر شغال."); }
-            btn.disabled = false;
+            input.value = '';
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: text})
+            });
+            const data = await res.json();
+            append('ai', data.reply || "حدث خطأ، تأكد من السيرفر.");
         }
-
         function append(role, text) {
             const chat = document.getElementById('chat');
-            const char = role === 'user' ? '👤' : 'V';
-            chat.innerHTML += `<div class="message ${role}"><div class="avatar">${char}</div><div class="content">${text.replace(/\n/g, '<br>')}</div></div>`;
+            const icon = role === 'user' ? '👤' : 'V';
+            chat.innerHTML += `<div class="message ${role}"><div class="avatar">${icon}</div><div class="content">${text}</div></div>`;
             chat.scrollTop = chat.scrollHeight;
         }
-
-        document.getElementById('userInput').addEventListener('keypress', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
     </script>
 </body>
 </html>
