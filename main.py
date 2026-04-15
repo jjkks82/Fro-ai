@@ -8,7 +8,9 @@ PORT = int(os.environ.get("PORT", 5000))
 
 # تهيئة Gemini
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+
+# حل مشكلة الـ 404: نستخدم الموديل flash بشكل مباشر
+model = genai.GenerativeModel('models/gemini-1.5-flash')
 
 app = Flask(__name__, template_folder='.')
 
@@ -27,15 +29,20 @@ def chat():
         if not message:
             return jsonify({"error": "الرسالة فارغة"}), 400
 
-        # إرسال الطلب لـ Gemini
+        # إرسال الطلب مع تحديد البرومبت
         full_query = f"{SYSTEM_PROMPT}\n\nالمستخدم: {message}"
+        
+        # استخدام توليد المحتوى
         response = model.generate_content(full_query)
 
-        return jsonify({"reply": response.text})
+        if response.text:
+            return jsonify({"reply": response.text})
+        else:
+            return jsonify({"reply": "اعتذر، لم أتمكن من صياغة رد حالياً."})
 
     except Exception as e:
         print(f"Error: {e}")
-        return jsonify({"error": "حدث خطأ في الاتصال، حاول مجدداً."}), 500
+        return jsonify({"error": f"حدث خطأ في الموديل: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
