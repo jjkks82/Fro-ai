@@ -2,257 +2,91 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VSO — مساعدك الذكي</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VSO AI</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --white: #ffffff;
-            --light-grey: #f9f9f9;
-            --border-color: #e5e5e5;
-            --text-main: #374151;
-            --user-bg: #f7f7f8;
-            --accent-blue: #10a37f; /* لون ChatGPT الأخضر الشهير أو الأزرق حسب رغبتك */
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Tajawal', sans-serif;
-            background-color: var(--white);
-            color: var(--text-main);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /*Sidebar - يختفي في الجوال لسهولة الاستخدام */
-        .sidebar {
-            width: 260px;
-            background-color: #202123;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-            transition: all 0.3s;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-        }
-
-        .new-chat {
-            border: 1px solid #4d4d4f;
-            padding: 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-bottom: 20px;
-            text-align: center;
-            transition: 0.3s;
-        }
-        .new-chat:hover { background-color: #2b2c2f; }
-
-        /* Main Area */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .chat-container {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .message-row {
-            padding: 24px 15%;
-            width: 100%;
-            display: flex;
-            gap: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        @media (max-width: 768px) {
-            .message-row { padding: 20px 5%; }
-        }
-
-        .message-row.user {
-            background-color: var(--white);
-        }
-
-        .message-row.ai {
-            background-color: var(--user-bg);
-        }
-
-        .avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 2px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            flex-shrink: 0;
-        }
-
-        .user .avatar { background-color: #5436da; color: white; }
-        .ai .avatar { background-color: #10a37f; color: white; }
-
-        .text {
-            line-height: 1.6;
-            font-size: 16px;
-            word-wrap: break-word;
-            width: 100%;
-        }
-
-        /* Input Area */
-        .input-wrapper {
-            padding: 20px 15%;
-            background: linear-gradient(transparent, white 20%);
-        }
-
-        @media (max-width: 768px) {
-            .input-wrapper { padding: 10px 5%; }
-        }
-
-        .input-box {
-            position: relative;
-            display: flex;
-            align-items: center;
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.05);
-            padding: 10px 15px;
-        }
-
-        textarea {
-            width: 100%;
-            border: none;
-            outline: none;
-            resize: none;
-            font-family: inherit;
-            font-size: 16px;
-            max-height: 200px;
-            padding: 5px;
-        }
-
-        .send-btn {
-            background: none;
-            border: none;
-            color: var(--accent-blue);
-            cursor: pointer;
-            font-size: 20px;
-            padding-right: 10px;
-        }
+        :root { --bg: #ffffff; --ai-bg: #f7f7f8; --border: #d1d5db; --text: #374151; --accent: #10a37f; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
         
-        .send-btn:disabled { color: #ccc; }
+        .header { padding: 15px; text-align: center; border-bottom: 1px solid var(--border); font-weight: bold; font-size: 1.2rem; background: #fff; position: sticky; top: 0; z-index: 10; }
+        .header span { color: var(--accent); }
 
-        /* تجميل السكرول بار */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #c5c5d2; border-radius: 10px; }
+        .chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        .message { padding: 20px 10%; display: flex; gap: 15px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .message.ai { background: var(--ai-bg); }
+        
+        @media (max-width: 600px) { .message { padding: 15px 5%; } }
+        
+        .avatar { width: 30px; height: 30px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+        .user .avatar { background: #5436da; color: white; }
+        .ai .avatar { background: var(--accent); color: white; }
+        
+        .content { line-height: 1.6; font-size: 15px; width: 100%; }
+
+        .input-area { padding: 20px 10%; background: linear-gradient(transparent, #fff 30%); }
+        @media (max-width: 600px) { .input-area { padding: 10px 5%; } }
+        
+        .input-container { display: flex; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        textarea { flex: 1; border: none; outline: none; resize: none; padding: 5px; font-family: inherit; font-size: 16px; max-height: 150px; }
+        .send-btn { background: var(--accent); color: white; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .send-btn:hover { opacity: 0.8; }
+        .send-btn:disabled { background: #ccc; }
     </style>
 </head>
 <body>
-
-    <aside class="sidebar">
-        <div class="new-chat" onclick="location.reload()">+ محادثة جديدة</div>
-        <div style="margin-top: auto; font-size: 14px; color: #8e8ea0; text-align: center;">
-            VSO AI v2.0
+    <div class="header"><span>VSO</span> AI</div>
+    <div class="chat-box" id="chat">
+        <div class="message ai">
+            <div class="avatar">V</div>
+            <div class="content">هلا والله! أنا VSO، كيف أقدر أساعدك اليوم؟</div>
         </div>
-    </aside>
-
-    <main class="main-content">
-        <div class="chat-container" id="chat">
-            <div class="message-row ai">
-                <div class="avatar">V</div>
-                <div class="text">مرحباً! أنا VSO، كيف يمكنني مساعدتك اليوم؟</div>
-            </div>
+    </div>
+    <div class="input-area">
+        <div class="input-container">
+            <textarea id="userInput" rows="1" placeholder="اسأل VSO عن أي شيء..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+            <button class="send-btn" id="sendBtn" onclick="send()">✈</button>
         </div>
+    </div>
 
-        <div class="input-wrapper">
-            <div class="input-box">
-                <textarea id="userInput" rows="1" placeholder="اسأل VSO عن أي شيء..." oninput="autoResize(this)"></textarea>
-                <button class="send-btn" id="sendBtn" onclick="send()">✈</button>
-            </div>
-            <p style="text-align: center; font-size: 12px; color: #8e8ea0; margin-top: 10px;">
-                VSO قد يخطئ أحياناً، يرجى التحقق من المعلومات المهمة.
-            </p>
-        </div>
-    </main>
+    <script>
+        let history = [];
+        async function send() {
+            const input = document.getElementById('userInput');
+            const btn = document.getElementById('sendBtn');
+            const text = input.value.trim();
+            if (!text || btn.disabled) return;
 
-<script>
-    let history = [];
+            append('user', text);
+            input.value = ''; input.style.height = 'auto';
+            btn.disabled = true;
 
-    function autoResize(textarea) {
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-    }
-
-    async function send() {
-        const input = document.getElementById('userInput');
-        const btn = document.getElementById('sendBtn');
-        const text = input.value.trim();
-        
-        if(!text) return;
-
-        // تعطيل الإدخال أثناء الإرسال
-        input.value = '';
-        input.style.height = 'auto';
-        btn.disabled = true;
-
-        append('user', text);
-        
-        try {
-            const res = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({message: text, history: history})
-            });
-            const data = await res.json();
-
-            if(data.reply) {
-                append('ai', data.reply);
-                history.push({role:'user', content:text}, {role:'assistant', content:data.reply});
-            } else {
-                append('ai', "عذراً، حدث خطأ في معالجة الرد.");
-            }
-        } catch (e) {
-            append('ai', "تعذر الاتصال بالسيرفر، تأكد من تشغيل Render.");
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, history: history.slice(-10) })
+                });
+                const data = await res.json();
+                if (data.reply) {
+                    append('ai', data.reply);
+                    history.push({ role: 'user', content: text }, { role: 'assistant', content: data.reply });
+                } else {
+                    append('ai', "عذراً، واجهت مشكلة بسيطة. حاول مرة ثانية.");
+                }
+            } catch { append('ai', "ما قدرت أتصل بالسيرفر، تأكد إن رندر شغال."); }
+            btn.disabled = false;
         }
-        
-        btn.disabled = false;
-    }
 
-    function append(role, text) {
-        const chat = document.getElementById('chat');
-        const char = role === 'user' ? '👤' : 'V';
-        const rowClass = role === 'user' ? 'user' : 'ai';
-        
-        const html = `
-            <div class="message-row ${rowClass}">
-                <div class="avatar">${char}</div>
-                <div class="text">${text.replace(/\n/g, '<br>')}</div>
-            </div>
-        `;
-        chat.innerHTML += html;
-        chat.scrollTop = chat.scrollHeight;
-    }
-
-    // دعم زر Enter للإرسال
-    document.getElementById('userInput').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            send();
+        function append(role, text) {
+            const chat = document.getElementById('chat');
+            const char = role === 'user' ? '👤' : 'V';
+            chat.innerHTML += `<div class="message ${role}"><div class="avatar">${char}</div><div class="content">${text.replace(/\n/g, '<br>')}</div></div>`;
+            chat.scrollTop = chat.scrollHeight;
         }
-    });
-</script>
+
+        document.getElementById('userInput').addEventListener('keypress', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+    </script>
 </body>
 </html>
