@@ -1,44 +1,44 @@
 import os
-from flask import Flask, request, jsonify, render_template
 import google.generativeai as genai
+from flask import Flask, render_template, request, jsonify
 
-# الإعدادات
-GEMINI_API_KEY = "AIzaSyDI9Y9dzYJ4GHX280pPlNMbBfWSngiwDAE"
-PORT = int(os.environ.get("PORT", 5000))
+app = Flask(__name__)
 
-# تهيئة Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('models/gemini-1.5-flash')
+API_KEY = "AIzaSyDI9Y9dzYJ4GHX280pPlNMbBfWSngiwDAE"
+genai.configure(api_key=API_KEY)
 
-app = Flask(__name__, template_folder='.')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-SYSTEM_PROMPT = "أنت مساعد ذكي جداً اسمك VSO. تجيب بوضوح وذكاء ومنطق عالي وباللغة العربية."
+SYSTEM_PROMPT = (
+    "أنت VSO، مساعد ذكاء اصطناعي مفيد وودود. "
+    "اسمك هو VSO وتم تطويرك لمساعدة المستخدمين. "
+    "أجب دائماً بأسلوب واضح ومنظم."
+)
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
-@app.route("/api/chat", methods=["POST"])
+@app.route("/chat", methods=["POST"])
 def chat():
     try:
         data = request.get_json()
-        message = data.get("message", "").strip()
+        user_message = data.get("message", "").strip()
 
-        if not message:
+        if not user_message:
             return jsonify({"error": "الرسالة فارغة"}), 400
 
-        # إرسال الطلب
-        full_query = f"{SYSTEM_PROMPT}\n\nالمستخدم: {message}"
-        response = model.generate_content(full_query)
+        full_prompt = f"{SYSTEM_PROMPT}\n\nالمستخدم: {user_message}"
 
-        if response.text:
-            return jsonify({"reply": response.text})
-        else:
-            return jsonify({"reply": "اعتذر، لم أتمكن من صياغة رد حالياً."})
+        response = model.generate_content(full_prompt)
+
+        reply = response.text
+
+        return jsonify({"reply": reply})
 
     except Exception as e:
-        print(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=PORT)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
